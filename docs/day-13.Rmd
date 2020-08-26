@@ -1,0 +1,65 @@
+---
+title: "daily assignment 13"
+author: "Kaitlyn Fu"
+date: "Aug 25, 2016" 
+output:
+  html_document:
+    theme: journal
+---
+
+```{r}
+library(rmapshaper)
+
+library(tidyverse)
+
+library(sf)
+```
+
+```{r}
+USAboundaries::us_states() %>%
+  filter(!name %in% c("Alaska", "Hawaii", "Puerto Rico")) %>%
+  st_union() %>% 
+  st_transform(5070) ->
+  conus
+```
+
+## st_simplify and dTolerance 
+```{r}
+conus1000 = st_simplify(conus, dTolerance =  1000)
+
+plot(conus1000)
+```
+```{r}
+mapview::npts(conus1000)
+```
+
+
+```{r}
+conus10000 = st_simplify(conus, dTolerance =  10000)
+
+plot(conus10000)
+```
+```{r}
+mapview::npts(conus10000)
+```
+
+## ms_simplify and keep
+```{r}
+conus10 = ms_simplify(conus, keep = .1)
+
+plot(conus10)
+```
+```{r}
+mapview::npts(conus10)
+```
+
+
+```{r}
+conus1 = ms_simplify(conus, keep = .01)
+
+plot(conus1)
+```
+```{r}
+mapview::npts(conus1)
+```
+
