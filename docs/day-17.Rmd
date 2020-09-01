@@ -1,0 +1,39 @@
+---
+title: "daily assignment 17"
+author: "Kaitlyn Fu"
+date: "Sept 1, 2020" 
+output:
+  html_document:
+    theme: journal
+---
+
+```{r}
+remotes::install_github("jhollist/elevatr")
+```
+
+```{r}
+library(tidyverse)
+library(sf)
+library(gdalUtilities)
+library(elevatr)
+library(rgdal)
+```
+
+```{r}
+read_csv("~/github/geog-176A-labs/data/uscities.csv") %>%
+  st_as_sf(coords = c("lng", "lat"), crs = 4326) %>%
+  filter(city == "Goleta") %>%
+  st_transform(5070) %>%
+  st_buffer(5000) %>%
+  st_bbox() %>%
+  st_as_sfc() %>%
+  st_as_sf() ->
+  bb
+```
+
+```{r}
+elevatr::get_elev_raster(bb, z = 10) %>%
+  crop(bb) %>%
+  plot()
+```
+
