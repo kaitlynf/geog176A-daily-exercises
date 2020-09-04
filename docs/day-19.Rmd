@@ -1,0 +1,109 @@
+---
+title: "daily assignment 18"
+author: "Kaitlyn Fu"
+date: "Sept 3, 2020" 
+output:
+  html_document:
+    theme: journal
+---
+
+
+```{r}
+library(osmdata)
+library(gdalUtilities)
+library(tidyverse)
+library(sf)
+library(elevatr)
+library(rgdal)
+library(mapview)
+library(leaflet)
+```
+
+```{r}
+read_csv("~/github/geog-176A-labs/data/uscities.csv") %>%
+  st_as_sf(coords = c("lng", "lat"), crs = 4326) %>%
+  filter(city == "Goleta") %>%
+  st_transform(5070) %>%
+  st_buffer(5000) %>%
+  st_bbox() %>%
+  st_as_sfc() %>%
+  st_as_sf() ->
+  bb
+```
+
+```{r}
+elevatr::get_elev_raster(bb, z = 10) %>%
+  crop(bb) ->
+  goleta_elev
+```
+
+```{r}
+writeRaster(goleta_elev, "~/github/geog176A-daily-exercises/goleta_elev.tif", overwrite = TRUE)
+```
+
+```{r}
+threshold = function(x) {ifelse(x <= 0 , NA, 1)}
+
+calc(goleta_elev, threshold) -> 
+  calc_goleta
+```
+
+```{r}
+multiply_goleta = goleta_elev * calc_goleta 
+
+plot(multiply_goleta)
+```
+
+```{r}
+(rcl = data.frame(min = seq(0,500,100),max =  seq(100,600, 100), lab = c(0:5)))
+
+reclassify(multiply_goleta, rcl) ->
+  recl_goleta
+```
+
+```{r}
+s = stack(goleta_elev, calc_goleta, multiply_goleta, recl_goleta) %>%
+    setNames(c("elevation", "land-mask", "terrain", "topography"))
+```
+
+```{r}
+plot(s, col = viridis::viridis(256))
+```
+
+```{r}
+#transform raster 's' to crs = 4326 since OSM data are all in WGS 
+bb %>%
+  st_transform(4326) ->
+  bbwgs
+```
+
+```{r}
+osm = osmdata::opq(bbwgs) %>%
+  add_osm_feature(key = "amenity", value = "restaurant") %>%
+  osmdata_sf()
+```
+
+```{r}
+osm$osm_polygons %>%
+  dplyr::select(osm_id, name) %>%
+    na.omit(., cols = name) ->
+  goleta_rest
+```
+
+```{r}
+goleta_rest %>%
+  st_transform(crs(goleta_elev)) %>%
+  st_intersection(st_as_sfc(st_bbox(goleta_elev))) %>%
+  mutate(get_elev_point(.)) %>%
+  st_transform(4326) ->
+  goleta_restaurant
+```
+
+```{r}
+mapview::mapview(goleta_restaurant)
+```
+
+```{r}
+#Could not plot leaflet due to error message "Don't know how to get location data from object of class sfc_POLYGON,sfc"
+```
+
