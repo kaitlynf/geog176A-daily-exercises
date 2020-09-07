@@ -1,0 +1,52 @@
+---
+title: "daily assignment 20"
+author: "Kaitlyn Fu"
+date: "Sept 7, 2020" 
+output:
+  html_document:
+    theme: journal
+---
+
+```{r}
+library(tidyverse)
+library(sf)
+library(climateR)
+library(raster)
+```
+
+
+```{r}
+USAboundaries::us_states() %>%
+  filter(name == "California") ->
+  CA
+
+```
+
+```{r}
+params = c("prcp", "soilm")
+
+CAparams = climateR::getTerraClim(CA, param = params, startDate = "2018-05-01") 
+
+CAparams = raster::stack(CAparams) %>%
+  setNames(c("prcp", "soilm"))
+
+value = values(CAparams)
+
+idx = which(!is.na(value))
+
+v = na.omit(value)
+
+vs = scale(v)
+
+E = kmeans(vs, 4, iter.max = 100)
+```
+
+
+```{r}
+CA_raster = CAparams$prcp
+values(CA_raster) = NA
+
+CA_raster[idx] <-E$cluster
+plot(CA_raster, col = RColorBrewer::brewer.pal(5, "Spectral"))
+```
+
